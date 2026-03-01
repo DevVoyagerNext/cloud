@@ -1,6 +1,7 @@
 package handler
 
 import (
+	dblayer "cloud/db"
 	"cloud/meta"
 	"cloud/util"
 	"encoding/json"
@@ -52,10 +53,18 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// 重置文件读写指针到文件开头
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
-		// meta.UpdateFileMeta(fileMeta)
 		_ = meta.UpdateFileMetaDb(fileMeta)
 
-		http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
+		// 更新用户文件表
+		r.ParseForm()
+		username := r.Form.Get("username")
+		suc := dblayer.OnUserFileUploadFinished(username, fileMeta.FileSha1, fileMeta.FileName, fileMeta.FileSize)
+		if suc {
+			http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
+		} else {
+			w.Write([]byte("file upload fail"))
+		}
+
 	}
 }
 

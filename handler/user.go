@@ -62,7 +62,6 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 3. 登录成功后重定向到首页
-	//w.Write([]byte("http://" + r.Host + "/static/view/home.html"))
 	resp := util.RespMsg{
 		Code: 0,
 		Msg:  "OK",
@@ -84,4 +83,42 @@ func GenToken(username string) string {
 	ts := fmt.Sprintf("%x", time.Now().Unix())
 	tokenPrefix := util.MD5([]byte(username + ts + "_tokensalt"))
 	return tokenPrefix + ts[:8]
+}
+
+func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
+	//1.解析请求参数
+	r.ParseForm()
+	username := r.Form.Get("username")
+	//token := r.Form.Get("token")
+
+	////2.验证token是否有效
+	//IsTokenValid := IsTokenValid(token)
+	//if !IsTokenValid {
+	//	w.WriteHeader(http.StatusForbidden)
+	//	return
+	//}
+	//3.查询用户信息
+	user, err := dblayer.GetUserInfo(username)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	//4.组装并且响应用户数据
+	resp := util.RespMsg{
+		Code: 0,
+		Msg:  "OK",
+		Data: user,
+	}
+	w.Write(resp.JSONBytes())
+}
+
+// IsTokenValid token是否有效
+func IsTokenValid(token string) bool {
+	if len(token) != 40 {
+		return false
+	}
+	//TODO:判断token时效性,是否过期
+	//TODO:从数据库里查询是否有这个token
+	//TODO:比较token是否一致
+	return true
 }
