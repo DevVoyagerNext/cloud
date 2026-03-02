@@ -2,6 +2,7 @@ package db
 
 import (
 	mydb "cloud/db/mysql"
+	"fmt"
 	"time"
 )
 
@@ -28,4 +29,30 @@ func OnUserFileUploadFinished(username, filehash, filename string, filesize int6
 		return false
 	}
 	return true
+}
+
+// QueryUserFileMetas 批量获取用户文件信息
+func QueryUserFileMetas(username string, limit int) ([]UserFile, error) {
+	stmt, err := mydb.DBConn().Prepare(
+		"select file_sha1,file_name,file_size,upload_at,last_update from tbl_user_file where user_name=? limit ?",
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query(username, limit)
+	if err != nil {
+		return nil, err
+	}
+	var userFiles []UserFile
+	for rows.Next() {
+		var userFile UserFile
+		err = rows.Scan(&userFile.FileHash, &userFile.FileName, &userFile.FileSize, &userFile.UploadAt, &userFile.LastUpdated)
+		if err != nil {
+			fmt.Println(err.Error())
+			break
+		}
+		userFiles = append(userFiles, userFile)
+	}
+	return userFiles, nil
 }
